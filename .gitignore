@@ -2,3 +2,6 @@
 meta
 data
 test.ipynb
+__pycache__
+score*
+rfb.py
