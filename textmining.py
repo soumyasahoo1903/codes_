@@ -1,54 +1,21 @@
+###for all together in batch of 100 ###
+
+
 from Bio import Entrez, Medline
 import pandas as pd
-import requests
-from bs4 import BeautifulSoup
-import time
-
-def search_pubchem(metabolite):
-    url = f'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{metabolite}/cids/JSON'
-    response = requests.get(url)
-    data = response.json()
-    if 'IdentifierList' in data and 'CID' in data['IdentifierList']:
-        return data['IdentifierList']['CID']
-    return []
 
 def search_metabolite_functions(metabolites):
-    Entrez.email = 'your.email@example.com'
+    Entrez.email = 'soumyapooja39@gmail.com'
     results = []
     for metabolite in metabolites:
-        # Search for metabolite functions in PubChem
-        pubchem_results = search_pubchem(metabolite)
-        if pubchem_results:
-            results.append(pubchem_results)
-        else:
-            # If not found in PubChem, search in PubMed for freely available full-text papers
-            term = f'{metabolite} AND "free full text"[Filter]'
-            handle = Entrez.esearch(db='pubmed', sort='relevance', retmax='40', term=term)
-            result = Entrez.read(handle)
-            results.append(result["IdList"])
+        handle = Entrez.esearch(db='pubmed', sort='relevance', retmax='40', term=metabolite)
+        result = Entrez.read(handle)
+        results.append(result["IdList"])
     return results
 
-def search_google_scholar(metabolite):
-    query = f'{metabolite} metabolite function'
-    url = f'https://scholar.google.com/scholar?q={query}'
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    result_links = soup.find_all('h3', class_='gs_rt')
-    results = []
-    for link in result_links:
-        article_title = link.text.strip()
-        article_url = link.a['href']
-        article_id = extract_article_id(article_url)
-        results.append(article_id)
-    return results
-
-def extract_article_id(url):
-    # Extract article ID from the URL
-    article_id = url.split('scholar?')[1]
-    return article_id
 
 def fetch_metabolite_details(id_lists):
-    Entrez.email = 'your.email@example.com'
+    Entrez.email = 'soumyapooja39@gmail.com'
     results = []
     for id_list in id_lists:
         ids = ','.join(id_list)
@@ -60,6 +27,7 @@ def fetch_metabolite_details(id_lists):
             functions.append(record.get('AB', 'N/A'))
         results.append(functions)
     return results
+
 
 def process_metabolites(excel_file, output_file_prefix, batch_size=5):
     # Read the Excel file
@@ -92,9 +60,7 @@ def process_metabolites(excel_file, output_file_prefix, batch_size=5):
         # Save the updated DataFrame to a new Excel file
         output_file = f"{output_file_prefix}_{batch + 1}.xlsx"
         df.loc[start_idx:end_idx-1].to_excel(output_file, index=False)
-        
-        # Wait for 1 second before processing the next batch
-        time.sleep(1)
+
 
 def main():
     # Input file and output file prefix
