@@ -2,45 +2,42 @@ import requests
 import xml.etree.ElementTree as ET
 import pandas as pd
 
-# API key
-api_key = "62815109555cb6e1c776695ca04e03cae608"
+# Function to fetch the extracted text for a compound ID
+def fetch_extracted_text(compound_id):
+    # Base URL for PubChem compound data
+    base_url = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/{}/XML/?response_type=display'
 
-# URL template for PubChem XML API
-url_template = f'https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/{{}}/XML/?response_type=display&api_key={api_key}'
-
-# Read the Excel file
-excel_file = "F:/NISER internship/Text-minning/pubchem_id_description/New folder/metabolite_name_1.xlsx"
-df = pd.read_excel(excel_file)
-
-# Create empty list to store the extracted text
-extracted_text = []
-
-# Iterate over the rows of the DataFrame
-for index, row in df.iterrows():
-    # Get the PubChem ID from the 'PubChem ID' column
-    pubchem_id = row['PubChem ID']
-
-    # Create the URL for the specific PubChem ID with the API key
-    url = url_template.format(pubchem_id)
+    # Format the URL with the compound ID
+    url = base_url.format(compound_id)
 
     # Fetch the XML content
     response = requests.get(url)
-    xml_content = response.content.decode('ISO-8859-1')
+    xml_content = response.content.decode('utf-8')
 
     # Parse the XML content
     root = ET.fromstring(xml_content)
 
     # Find the first five String elements
-    string_elements = root.findall('.//{http://pubchem.ncbi.nlm.nih.gov/pug_view}String')[:30]
+    string_elements = root.findall('.//{http://pubchem.ncbi.nlm.nih.gov/pug_view}String')[:15]
+    extracted_text = [string_element.text.strip() for string_element in string_elements]
+    return extracted_text 
 
-    # Extract the text from the String elements
-    strings = [string_element.text.strip() for string_element in string_elements]
+# Read the Excel file
+df = pd.read_excel(r'F:\NISER internship\Text-minning\pubchem_id_description\7179_metabolites\example.xlsx')
 
-    # Append the extracted text to the list
-    extracted_text.append(strings)
+# Get the compound IDs from the second column
+compound_ids = df.iloc[:, 1].tolist()
 
-# Add the extracted text as a new column in the DataFrame
-df['Extracted_Text'] = extracted_text
+# Create a new column for extracted text
+df['Extracted Text'] = ''
 
-# Save the updated DataFrame back to the Excel file
-df.to_excel(excel_file, index=False)
+# Iterate over the compound IDs
+for i, compound_id in enumerate(compound_ids, start=0):
+    # Fetch the extracted text
+    extracted_text = fetch_extracted_text(compound_id)
+    
+    # Store the extracted text in the corresponding row of the new column
+    df.at[i, 'Extracted Text'] = extracted_text
+
+# Save the modified DataFrame back to the Excel file
+df.to_excel(r'F:\NISER internship\Text-minning\pubchem_id_description\7179_metabolites\example.xlsx', index=False)
